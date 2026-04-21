@@ -3,6 +3,9 @@
 
 #include <Arduino.h>
 #include <AdvancedPID.h>
+#include "IRSensors.h"
+#include "Motors.h"
+#include "Gyro.h"
 
 #define HUGGER_LEFT_OFFSET 22
 #define HUGGER_FRONTLEFT_OFFSET 18
@@ -13,8 +16,8 @@
 #define HUGGER_Kp 0.7
 #define HUGGER_Ki 0.0
 #define HUGGER_Kd 0.0
-#define HUGGER_OUT_MIN -PILOT_FORWARD_SPEED
-#define HUGGER_OUT_MAX  PILOT_FORWARD_SPEED
+#define HUGGER_OUT_MIN -60
+#define HUGGER_OUT_MAX  60
 
 #define GYRO_STRAIGHT_Kp 1.5
 #define GYRO_STRAIGHT_Ki 0.0
@@ -22,14 +25,19 @@
 
 class Hugger {
 public:
-    Hugger(IRSensors &aIrSensors, Motors &aMotors);
+    Hugger(IRSensors &aIrSensors, Motors &aMotors, Gyro &aGyro);
     
     void Init();
 
-    void hug(bool leftWall, bool leftFrontWall, bool frontWall, bool rightFrontWall, bool rightWall);
+    void hug(TMotorValues &aMSV, bool leftWall, bool leftFrontWall, bool frontWall, bool rightFrontWall, bool rightWall);
+
+    void reset();
 
 private:
-
+    TMotorValues MSV;
+    IRSensors &irSensors;
+    Motors &motors;
+    Gyro &gyro;
 
     AdvancedPID pidLeftHugger;
     AdvancedPID pidLeftFrontHugger;

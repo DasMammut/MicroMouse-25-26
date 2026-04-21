@@ -1,7 +1,7 @@
 #include "Hugger.h"
 
-void Hugger::Hugger(IRSensors &aIrSensors, Motors &aMotors)
-    : irSensors(aIrSensors), motors(aMotors),
+Hugger::Hugger(IRSensors &aIrSensors, Motors &aMotors, Gyro &aGyro)
+    : irSensors(aIrSensors), motors(aMotors), gyro(aGyro),
       pidLeftHugger(HUGGER_Kp, HUGGER_Ki, HUGGER_Kd),
       pidLeftFrontHugger(HUGGER_Kp, HUGGER_Ki, HUGGER_Kd),
       pidHugger(HUGGER_Kp, HUGGER_Ki, HUGGER_Kd),
@@ -29,7 +29,8 @@ void Hugger::Init() {
     pidGyroStraight.setMode(MODE_AUTO);
 }
 
-void Hugger::hug(bool leftWall, bool leftFrontWall, bool frontWall, bool rightFrontWall, bool rightWall) {
+void Hugger::hug(TMotorValues &aMSV, bool leftWall, bool leftFrontWall, bool frontWall, bool rightFrontWall, bool rightWall) {
+    MSV = aMSV;
     if(leftWall && leftFrontWall && rightWall && rightFrontWall) {
         hugger();
     }
@@ -53,9 +54,18 @@ void Hugger::hug(bool leftWall, bool leftFrontWall, bool frontWall, bool rightFr
     else {
         gyroStraight();
     }
+    aMSV = MSV;
 }
 
-
+void Hugger::reset() {
+    pidLeftHugger.reset();
+    pidLeftFrontHugger.reset();
+    pidHugger.reset();
+    pidFrontHugger.reset();
+    pidRightFrontHugger.reset();
+    pidRightHugger.reset();
+    pidGyroStraight.reset();
+}
 
 
 
@@ -64,8 +74,8 @@ void Hugger::leftHugger() {
     float input = left - HUGGER_LEFT_OFFSET;
     float correction = pidLeftHugger.run(input, 0.0);
 
-    MSV.left  = PILOT_FORWARD_SPEED + (int16_t)correction;
-    MSV.right = PILOT_FORWARD_SPEED - (int16_t)correction;
+    MSV.left  += (int16_t)correction;
+    MSV.right -= (int16_t)correction;
 }
 
 void Hugger::leftFrontHugger() {
@@ -73,8 +83,8 @@ void Hugger::leftFrontHugger() {
     float input = leftFront - HUGGER_FRONTLEFT_OFFSET;
     float correction = pidLeftFrontHugger.run(input, 0.0);
 
-    MSV.left  = PILOT_FORWARD_SPEED + (int16_t)correction;
-    MSV.right = PILOT_FORWARD_SPEED - (int16_t)correction;
+    MSV.left  += (int16_t)correction;
+    MSV.right -= (int16_t)correction;
 }
 
 void Hugger::hugger() {
@@ -84,8 +94,8 @@ void Hugger::hugger() {
     float input = left - right + HUGGER_OFFSET;
     float correction = pidHugger.run(input, 0.0);
 
-    MSV.left  = PILOT_FORWARD_SPEED + (int16_t)correction;
-    MSV.right = PILOT_FORWARD_SPEED - (int16_t)correction;
+    MSV.left  += (int16_t)correction;
+    MSV.right -= (int16_t)correction;
 }
 
 void Hugger::frontHugger() {
@@ -94,8 +104,8 @@ void Hugger::frontHugger() {
     float input = left - right + HUGGER_FRONT_OFFSET;
     float correction = pidFrontHugger.run(input, 0.0);
 
-    MSV.left  = PILOT_FORWARD_SPEED + (int16_t)correction;
-    MSV.right = PILOT_FORWARD_SPEED - (int16_t)correction;
+    MSV.left  += (int16_t)correction;
+    MSV.right -= (int16_t)correction;
 }
 
 
@@ -105,8 +115,8 @@ void Hugger::rightFrontHugger() {
     float input = HUGGER_FRONTRIGHT_OFFSET - rightFront;
     float correction = pidRightFrontHugger.run(input, 0.0);
 
-    MSV.left  = PILOT_FORWARD_SPEED + (int16_t)correction;
-    MSV.right = PILOT_FORWARD_SPEED - (int16_t)correction;
+    MSV.left  += (int16_t)correction;
+    MSV.right -= (int16_t)correction;
 }
 
 
@@ -116,13 +126,13 @@ void Hugger::rightHugger() {
     float input = HUGGER_RIGHT_OFFSET - right;
     float correction = pidRightHugger.run(input, 0.0);
 
-    MSV.left  = PILOT_FORWARD_SPEED + (int16_t)correction;
-    MSV.right = PILOT_FORWARD_SPEED - (int16_t)correction;
+    MSV.left  += (int16_t)correction;
+    MSV.right -= (int16_t)correction;
 }
 
 void Hugger::gyroStraight() {
     // Gyro-basierte Geradeauskorrektur: angle sollte ~0 bleiben
     float correction = gyro.angle * GYRO_STRAIGHT_Kp;
-    MSV.left  = PILOT_FORWARD_SPEED - (int16_t)correction;
-    MSV.right = PILOT_FORWARD_SPEED + (int16_t)correction;
+    MSV.left  += (int16_t)correction;
+    MSV.right -= (int16_t)correction;
 }

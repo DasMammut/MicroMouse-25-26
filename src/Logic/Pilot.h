@@ -3,7 +3,6 @@
 
 #include <Arduino.h>
 #include <AdvancedPID.h>
-#include <csignal>
 #include "../Hardware/IRSensors.h"
 #include "../Hardware/Motors.h"
 #include "../Hardware/Impeller.h"
@@ -21,27 +20,21 @@
 #define START_DIRECTION NORTH
 
 // Geschwindigkeiten
-#define PILOT_FORWARD_SPEED 60
-#define PILOT_TURN_SPEED 30
+#define PILOT_FORWARD_SPEED 70
+#define PILOT_TURN_SPEED 40
 
 // Gyro Geradeauskorrektur
-#define GYRO_STRAIGHT_Kp 1.5
+#define GYRO_STRAIGHT_Kp 10.0
 
 // Tick für Zellen Orientierung
 #define TICKS_CELL_CELL 80 
-#define TICKS_CURVE_CELL  (TICKS_CELL_CELL / 2 + 10)
+#define TICKS_CURVE_CELL  ((TICKS_CELL_CELL / 2) + 10)
 
 // Gyro-basierte Drehwinkel (in Grad)
 #define GYRO_TURN_90  70.0
 #define GYRO_TURN_180 170.0
 #define GYRO_SLOW_ZONE 20.0  // Ab hier langsamer drehen
 
-
-typedef struct {
-    int16_t left;
-    int16_t right;
-    uint8_t impeller;
-} TMotorValues;
 
 typedef enum {
     DECIDE,
@@ -104,11 +97,12 @@ private:
     #define GYRO_Ki 0.0
     #define GYRO_Kd 0.0
     AdvancedPID pidGyroCurve; // PID für die Gyro-basierte Kurvenfahrt
-    voi
+    //void gyroCurve(float angle, float targetAngle); // Funktion für die Gyro-basierte Kurvenfahrt
     #define DELTA_TICKS_Kp 0.5
     #define DELTA_TICKS_Ki 0.0
     #define DELTA_TICKS_Kd 0.0
     AdvancedPID pidDeltaTicks;
+    //void deltaTicksCurve(); // Funktion für die Delta-Ticks-basierte Kurvenfahrt
 };
 
 #endif

@@ -5,7 +5,9 @@ Pilot::Pilot(IRSensors &aIrSensors, Motors &aMotors, Impeller &aImpeller, Gyro &
     : irSensors(aIrSensors), motors(aMotors), impeller(aImpeller), gyro(aGyro),
       curDirection(START_DIRECTION), newDirection(START_DIRECTION), curState(DECIDE), oldState(DECIDE), StateStartTicksL(0), StateStartTicksR(0),
       leftWall(false), rightWall(false), frontWall(false),
-      hugger(aIrSensors, aMotors) {
+      hugger(aIrSensors, aMotors, aGyro),
+      pidGyroCurve(GYRO_STRAIGHT_Kp, GYRO_STRAIGHT_Ki, GYRO_STRAIGHT_Kd),
+      pidDeltaTicks(DELTA_TICKS_Kp, DELTA_TICKS_Ki, DELTA_TICKS_Kd) {
     MSV.left = 0;
     MSV.right = 0;
     MSV.impeller = 0;
@@ -22,6 +24,11 @@ void Pilot::Init() {
 
     map.Init();
     hugger.Init();
+
+    pidGyroCurve.setOutputLimits(-PILOT_TURN_SPEED, PILOT_TURN_SPEED);
+    pidGyroCurve.setMode(MODE_AUTO);
+    pidDeltaTicks.setOutputLimits(-PILOT_TURN_SPEED, PILOT_TURN_SPEED);
+    pidDeltaTicks.setMode(MODE_AUTO);
 }
 
 void Pilot::loop() {
@@ -92,12 +99,7 @@ void Pilot::startState(TState aNextState) {
     gyro.reset(); // Winkel auf 0 für nächste Drehung
 
     // PID-Reset: alte Fehler nicht in den neuen State mitschleppen
-    pidLeftHugger.reset();
-    pidLeftFrontHugger.reset();
-    pidHugger.reset();
-    pidFrontHugger.reset();
-    pidRightFrontHugger.reset();
-    pidRightHugger.reset();
+    hugger.reset();
 }
 
 // SM Einzelne States: Alle Funktionen müssen am Ende den nächsten State setzen, damit die State Machine weiterläuft. Alle Funktionen setzen die MSV-Werte entsprechend, damit im loop() die Motoren und der Impeller die richtigen Werte bekommen.
@@ -117,11 +119,6 @@ void Pilot::SM_decide() {
     map.updateMaze();
 
     TDirection relTurnDirection = map.getRelativeDirection();
-    
-    // Kompakter Debug: 1 Zeile pro Entscheidung
-    static const char relDir[] = {'F', 'R', 'U', 'L'};
-    Serial2.print(map.getMouseX()); Serial2.print(",");
-    Serial2.print(map.getMouseY()); Serial2.println(relDir[relTurnDirection]);
 
     switch(relTurnDirection) {
         case NORTH: // Geradeaus
@@ -150,7 +147,10 @@ void Pilot::SM_forward(uint16_t ticks = TICKS_CELL_CELL) {
     // Wandzentrierung während der Fahrt
     mesWalls();
 
-    hugger.hug(leftWall, leftFrontWall, frontWall, rightFrontWall, rightWall);
+    MSV.left = PILOT_FORWARD_SPEED;
+    MSV.right = PILOT_FORWARD_SPEED;
+    MSV.impeller = 0;
+    hugger.hug(MSV, leftWall, leftFrontWall, frontWall, rightFrontWall, rightWall);
 
     if(irSensors.getCenter() < ALIGNMENT_THRESHOLD && motors.getAVGTicks()  - avgStartTicks() >= TICKS_CURVE_CELL) {
         map.moveCell(curDirection);
@@ -167,13 +167,11 @@ void Pilot::SM_forward(uint16_t ticks = TICKS_CELL_CELL) {
 }
 
 void Pilot::SM_leftCurve() {
-    // Sinus-Profil: langsam→schnell→langsam, Peak bei 45°, Min = TURN_SPEED/2
     float angle = fabs(gyro.angle);
-    int16_t minSpd = PILOT_TURN_SPEED / 2;
-    int16_t speed = minSpd + (int16_t)((PILOT_TURN_SPEED - minSpd) * sin(angle * M_PI / GYRO_TURN_90));
-
-    MSV.left  = -speed / 6;
-    MSV.right = speed;
+    float error = gyro.angle - GYRO_TURN_90;
+    float correction = pidGyroCurve.run(error, 0.0);
+    MSV.left  = -correction / 4;
+    MSV.right = correction;
 
     if(angle >= GYRO_TURN_90) {
         curDirection = newDirection;
@@ -182,13 +180,11 @@ void Pilot::SM_leftCurve() {
 }
 
 void Pilot::SM_rightCurve() {
-    // Sinus-Profil: langsam→schnell→langsam, Peak bei 45°, Min = TURN_SPEED/3
     float angle = fabs(gyro.angle);
-    int16_t minSpd = PILOT_TURN_SPEED / 2;
-    int16_t speed = minSpd + (int16_t)((PILOT_TURN_SPEED - minSpd) * sin(angle * M_PI / GYRO_TURN_90));
-
-    MSV.left  = speed;
-    MSV.right = -speed / 6;
+    float error = gyro.angle - GYRO_TURN_90;
+    float correction = pidGyroCurve.run(error, 0.0);
+    MSV.left  = correction;
+    MSV.right = -correction  / 4;
 
     if(angle >= GYRO_TURN_90) {
         curDirection = newDirection;
@@ -251,6 +247,3 @@ TDirection Pilot::rotateRight(TDirection aDirection) {
 int32_t Pilot::avgStartTicks() {
     return (StateStartTicksL + StateStartTicksR) / 2;
 }
-
-
-void Pilot::

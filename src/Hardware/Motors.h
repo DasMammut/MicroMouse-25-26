@@ -5,6 +5,12 @@
 #include <AdvancedPID.h>
 #include "PinOut.h"
 
+typedef struct {
+    int16_t left;
+    int16_t right;
+    uint8_t impeller;
+} TMotorValues;
+
 #define ENCODER_COUNTS_PER_REV 3
 #define TCA0_PRESCALER 8
 #define TCB_MAX 50000
