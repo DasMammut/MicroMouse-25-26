@@ -7,14 +7,14 @@
 #include "Motors.h"
 #include "Gyro.h"
 
-#define HUGGER_LEFT_OFFSET 22
+#define HUGGER_LEFT_OFFSET 18
 #define HUGGER_FRONTLEFT_OFFSET 18
 #define HUGGER_OFFSET -4
 #define HUGGER_FRONT_OFFSET -6
 #define HUGGER_FRONTRIGHT_OFFSET 16
 #define HUGGER_RIGHT_OFFSET 12
-#define HUGGER_Kp 0.7
-#define HUGGER_Ki 0.0
+#define HUGGER_Kp 2.5
+#define HUGGER_Ki 0.01
 #define HUGGER_Kd 0.0
 #define HUGGER_OUT_MIN -60
 #define HUGGER_OUT_MAX  60

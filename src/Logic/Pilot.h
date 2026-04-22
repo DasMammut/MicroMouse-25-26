@@ -9,13 +9,15 @@
 #include "../Hardware/Gyro.h"
 #include "Map.h"
 #include "Hugger.h"
+#include "Ramp.h"
 
 #define LOOP_PERIOD_MS 5
 
-#define MES_WALL_FRONT_THRESHOLD 20
-#define MES_WALL_FRONTSIDE_THRESHOLD 20
-#define MES_WALL_SIDE_THRESHOLD 15
-#define ALIGNMENT_THRESHOLD 6
+#define MES_WALL_FRONT_THRESHOLD 25
+#define MES_WALL_FRONTSIDE_THRESHOLD 25
+#define MES_WALL_SIDE_THRESHOLD 20
+#define ALIGNMENT_FRONT_THRESHOLD 6
+#define ALIGNMENT_SIDE_THRESHOLD 30
 
 #define START_DIRECTION NORTH
 
@@ -28,12 +30,12 @@
 
 // Tick für Zellen Orientierung
 #define TICKS_CELL_CELL 80 
-#define TICKS_CURVE_CELL  ((TICKS_CELL_CELL / 2) + 10)
+#define TICKS_CURVE_CELL  60
+#define TICKS_ALIGNMENT_CELL 50
 
 // Gyro-basierte Drehwinkel (in Grad)
-#define GYRO_TURN_90  70.0
-#define GYRO_TURN_180 170.0
-#define GYRO_SLOW_ZONE 20.0  // Ab hier langsamer drehen
+#define GYRO_TURN_90  80.0
+#define GYRO_TURN_180 165.0
 
 
 typedef enum {
@@ -59,6 +61,7 @@ private:
     Gyro &gyro;
     Map map;
     Hugger hugger;
+    Ramp ramp;
 
     TMotorValues MSV; // Motor Set Values
 
@@ -73,7 +76,11 @@ private:
     bool leftFrontWall;
     bool frontWall;
     bool rightFrontWall;
-    bool rightWall; // Damit man weiß ob gerade eine Wand neben mir is
+    bool rightWall;
+
+    bool aligned;
+    uint16_t wasLeftWall;
+    uint16_t wasRightWall;
     
 
     void StateMachine(); // State Machine for the different states of the mouse
@@ -91,6 +98,7 @@ private:
     TDirection turnAround(TDirection aDirection);
     TDirection rotateRight(TDirection aDirection);
     int32_t avgStartTicks(); // Hilfsfunktion, um den Durchschnitt der Startticks für die State Machine zu bekommen
+    void setAvgStartTicks(int32_t ticks); // Hilfsfunktion, um die Startticks für die State Machine zu setzen
     
 
     #define GYRO_Kp 1.5

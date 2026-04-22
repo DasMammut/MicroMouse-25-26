@@ -34,14 +34,14 @@ void Hugger::hug(TMotorValues &aMSV, bool leftWall, bool leftFrontWall, bool fro
     if(leftWall && leftFrontWall && rightWall && rightFrontWall) {
         hugger();
     }
-    else if(leftFrontWall && rightFrontWall) {
-        frontHugger();
-    }
     else if(leftWall && leftFrontWall) {
         leftHugger();
     }
     else if(rightWall && rightFrontWall) {
         rightHugger();
+    }
+    else if(leftFrontWall && rightFrontWall) {
+        frontHugger();
     }
 
     // else if(leftFrontWall) {

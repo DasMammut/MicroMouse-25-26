@@ -90,6 +90,10 @@ void startCondition() {
         
         delay(20);
     }
+
+    #ifdef DEBUG
+    debugOutput();
+    #endif
 }
 
 

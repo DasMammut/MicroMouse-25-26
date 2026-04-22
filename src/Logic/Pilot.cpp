@@ -2,9 +2,9 @@
 #include "Map.h"
 
 Pilot::Pilot(IRSensors &aIrSensors, Motors &aMotors, Impeller &aImpeller, Gyro &aGyro)
-    : irSensors(aIrSensors), motors(aMotors), impeller(aImpeller), gyro(aGyro),
+    : irSensors(aIrSensors), motors(aMotors), impeller(aImpeller), gyro(aGyro), ramp(aMotors),
       curDirection(START_DIRECTION), newDirection(START_DIRECTION), curState(DECIDE), oldState(DECIDE), StateStartTicksL(0), StateStartTicksR(0),
-      leftWall(false), rightWall(false), frontWall(false),
+      leftWall(false), rightWall(false), frontWall(false), wasLeftWall(0), wasRightWall(0), aligned(false),
       hugger(aIrSensors, aMotors, aGyro),
       pidGyroCurve(GYRO_STRAIGHT_Kp, GYRO_STRAIGHT_Ki, GYRO_STRAIGHT_Kd),
       pidDeltaTicks(DELTA_TICKS_Kp, DELTA_TICKS_Ki, DELTA_TICKS_Kd) {
@@ -40,7 +40,7 @@ void Pilot::loop() {
 
     StateMachine();
 
-    motors.setRPS(MSV.left, MSV.right);
+    ramp.step(MSV);
     impeller.set(MSV.impeller);
     motors.update();
     impeller.update();
@@ -92,10 +92,13 @@ void Pilot::StateMachine() {
 
 // Neuen State starten: Alle Werte zurücksetzen, Startzeit merken
 void Pilot::startState(TState aNextState) {
-    oldState = curState;
+    if(curState != DECIDE) oldState = curState;
     curState = aNextState;
     StateStartTicksL = motors.ticksL;
     StateStartTicksR = motors.ticksR;
+    aligned = false;
+    wasLeftWall = irSensors.getLeftCenter();
+    wasRightWall = irSensors.getRightCenter();
     gyro.reset(); // Winkel auf 0 für nächste Drehung
 
     // PID-Reset: alte Fehler nicht in den neuen State mitschleppen
@@ -149,17 +152,28 @@ void Pilot::SM_forward(uint16_t ticks = TICKS_CELL_CELL) {
 
     MSV.left = PILOT_FORWARD_SPEED;
     MSV.right = PILOT_FORWARD_SPEED;
-    MSV.impeller = 0;
     hugger.hug(MSV, leftWall, leftFrontWall, frontWall, rightFrontWall, rightWall);
 
-    if(irSensors.getCenter() < ALIGNMENT_THRESHOLD && motors.getAVGTicks()  - avgStartTicks() >= TICKS_CURVE_CELL) {
+    // if(!aligned && (int16_t)irSensors.getLeftCenter() - (int16_t)wasLeftWall > ALIGNMENT_SIDE_THRESHOLD) {
+    //     setAvgStartTicks(motors.getAVGTicks() + TICKS_ALIGNMENT_CELL - ticks);
+    //     aligned = true;
+    // }
+    // else if(!aligned && (int16_t)irSensors.getRightCenter() - (int16_t)wasRightWall > ALIGNMENT_SIDE_THRESHOLD) {
+    //     setAvgStartTicks(motors.getAVGTicks() + TICKS_ALIGNMENT_CELL - ticks);
+    //     aligned = true;
+    // }
+
+    wasLeftWall = irSensors.getLeftCenter();
+    wasRightWall = irSensors.getRightCenter();
+
+    // Eine Zelle gefahren → nächste Entscheidung
+    if(motors.getAVGTicks() - avgStartTicks() >= ticks) {
         map.moveCell(curDirection);
         startState(DECIDE);
         return;
     }
 
-    // Eine Zelle gefahren → nächste Entscheidung
-    if(motors.getAVGTicks() - avgStartTicks() >= ticks) {
+    if(irSensors.getCenter() < ALIGNMENT_FRONT_THRESHOLD) {
         map.moveCell(curDirection);
         startState(DECIDE);
         return;
@@ -170,7 +184,7 @@ void Pilot::SM_leftCurve() {
     float angle = fabs(gyro.angle);
     float error = gyro.angle - GYRO_TURN_90;
     float correction = pidGyroCurve.run(error, 0.0);
-    MSV.left  = -correction / 4;
+    MSV.left  = -correction / 5;
     MSV.right = correction;
 
     if(angle >= GYRO_TURN_90) {
@@ -184,7 +198,7 @@ void Pilot::SM_rightCurve() {
     float error = gyro.angle - GYRO_TURN_90;
     float correction = pidGyroCurve.run(error, 0.0);
     MSV.left  = correction;
-    MSV.right = -correction  / 4;
+    MSV.right = -correction  / 5;
 
     if(angle >= GYRO_TURN_90) {
         curDirection = newDirection;
@@ -195,11 +209,9 @@ void Pilot::SM_rightCurve() {
 void Pilot::SM_turn() {
     // Sinus-Profil für 180°: Peak bei 90°, Min = TURN_SPEED/3
     float angle = fabs(gyro.angle);
-    int16_t minSpd = PILOT_TURN_SPEED / 3;
-    int16_t speed = minSpd + (int16_t)((PILOT_TURN_SPEED - minSpd) * sin(angle * M_PI / GYRO_TURN_180));
 
-    MSV.left  =  speed;
-    MSV.right = -speed;
+    MSV.left  =  PILOT_TURN_SPEED;
+    MSV.right = -PILOT_TURN_SPEED;
 
     if(angle >= GYRO_TURN_180) {
         curDirection = newDirection;
@@ -246,4 +258,9 @@ TDirection Pilot::rotateRight(TDirection aDirection) {
 
 int32_t Pilot::avgStartTicks() {
     return (StateStartTicksL + StateStartTicksR) / 2;
+}
+
+void Pilot::setAvgStartTicks(int32_t ticks) {
+    StateStartTicksL = ticks;
+    StateStartTicksR = ticks;
 }
