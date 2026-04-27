@@ -87,9 +87,26 @@ uint16_t IRSensors::getRight() {
     return getDistLookUp(right_Distance);
 }
 
+uint16_t IRSensors::getLeftRaw() {
+    return left_Distance;
+}
+
+uint16_t IRSensors::getLeftCenterRaw() {
+    return leftcenter_Distance;
+}
+
+uint16_t IRSensors::getCenterRaw() {
+    return center_Distance;
+}
+
+uint16_t IRSensors::getRightCenterRaw() {
+    return rightcenter_Distance;
+}
+
+uint16_t IRSensors::getRightRaw() {
+    return right_Distance;
+}
+
 uint16_t IRSensors::getDistLookUp(uint16_t aDistance){
-    if(aDistance < OUT_OF_RANGE_VALUE) {
-        aDistance = OUT_OF_RANGE_VALUE;
-    }
-    return LOOK_UP_CONST / aDistance;
+    return (LOOK_UP_FACTOR_CONST)/(aDistance + LOOK_UP_OFFSET_CONST);
 }

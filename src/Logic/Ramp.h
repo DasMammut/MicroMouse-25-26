@@ -3,8 +3,8 @@
 #include <Arduino.h>
 #include "../Hardware/Motors.h"
 
-#define RAMP_STEP_UP 10
-#define RAMP_STEP_DOWN 10
+#define RAMP_STEP_UP 5
+#define RAMP_STEP_DOWN 5
 
 class Ramp {
 public:
@@ -14,7 +14,7 @@ public:
 
 private:
     Motors &motors;
-    uint16_t curLeft;
-    uint16_t curRight;
+    int16_t curLeft;
+    int16_t curRight;
 
 };

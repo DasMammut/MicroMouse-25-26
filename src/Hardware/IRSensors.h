@@ -4,8 +4,8 @@
 #include <Arduino.h>
 #include "PinOut.h"
 
-#define LOOK_UP_CONST 5000
-#define OUT_OF_RANGE_VALUE 50
+#define LOOK_UP_FACTOR_CONST 43000
+#define LOOK_UP_OFFSET_CONST 114
 
 class IRSensors {
 public:
@@ -22,6 +22,12 @@ public:
     uint16_t getCenter();
     uint16_t getRightCenter();
     uint16_t getRight();
+
+    uint16_t getLeftRaw();
+    uint16_t getLeftCenterRaw();
+    uint16_t getCenterRaw();
+    uint16_t getRightCenterRaw();
+    uint16_t getRightRaw();
 
 private:
     uint16_t left_Distance;

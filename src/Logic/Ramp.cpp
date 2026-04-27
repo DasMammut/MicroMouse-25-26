@@ -1,12 +1,12 @@
 #include "Ramp.h"
 
-Ramp::Ramp(Motors &aMotors) : motors(aMotors) {
+Ramp::Ramp(Motors &aMotors) : motors(aMotors), curLeft(0), curRight(0) {
 
 }
 
 void Ramp::step(const TMotorValues &msv) {
-    int tarLeft = msv.left;
-    int tarRight = msv.right;
+    int16_t tarLeft = msv.left;
+    int16_t tarRight = msv.right;
 
     if (curLeft < tarLeft) {
         curLeft = min(curLeft + RAMP_STEP_UP, tarLeft);

@@ -10,7 +10,9 @@ public:
     void Init();
     void update();      
     float angle;        // Direktzugriff für Speed
+    float absAngle;     // absolute Drehung seit letztem Reset (kann >360° werden)
     void reset() { angle = 0; }
+    void resetAbs() {absAngle = 0;}
 
 private:
     float biasZ;

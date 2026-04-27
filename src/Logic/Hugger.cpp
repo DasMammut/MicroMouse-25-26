@@ -2,12 +2,12 @@
 
 Hugger::Hugger(IRSensors &aIrSensors, Motors &aMotors, Gyro &aGyro)
     : irSensors(aIrSensors), motors(aMotors), gyro(aGyro),
-      pidLeftHugger(HUGGER_Kp, HUGGER_Ki, HUGGER_Kd),
-      pidLeftFrontHugger(HUGGER_Kp, HUGGER_Ki, HUGGER_Kd),
+      pidLeftHugger(HUGGER_Kp * 2, HUGGER_Ki * 2, HUGGER_Kd * 2),
+      pidLeftFrontHugger(HUGGER_Kp * 2, HUGGER_Ki * 2, HUGGER_Kd * 2),
       pidHugger(HUGGER_Kp, HUGGER_Ki, HUGGER_Kd),
       pidFrontHugger(HUGGER_Kp, HUGGER_Ki, HUGGER_Kd),
-      pidRightFrontHugger(HUGGER_Kp, HUGGER_Ki, HUGGER_Kd),
-      pidRightHugger(HUGGER_Kp, HUGGER_Ki, HUGGER_Kd),
+      pidRightFrontHugger(HUGGER_Kp * 2, HUGGER_Ki * 2, HUGGER_Kd * 2),
+      pidRightHugger(HUGGER_Kp * 2, HUGGER_Ki * 2, HUGGER_Kd * 2),
       pidGyroStraight(GYRO_STRAIGHT_Kp, GYRO_STRAIGHT_Ki, GYRO_STRAIGHT_Kd) {
 
 }
@@ -54,6 +54,7 @@ void Hugger::hug(TMotorValues &aMSV, bool leftWall, bool leftFrontWall, bool fro
     else {
         gyroStraight();
     }
+
     aMSV = MSV;
 }
 

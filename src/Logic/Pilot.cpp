@@ -167,7 +167,7 @@ void Pilot::SM_forward(uint16_t ticks = TICKS_CELL_CELL) {
     wasRightWall = irSensors.getRightCenter();
 
     // Eine Zelle gefahren → nächste Entscheidung
-    if(motors.getAVGTicks() - avgStartTicks() >= ticks) {
+    if(motors.getAVGTicks() - avgStartTicks() >= ticks && irSensors.getCenter() > ALIGNMENT_MIN_FRONT_THRESHOLD) {
         map.moveCell(curDirection);
         startState(DECIDE);
         return;
