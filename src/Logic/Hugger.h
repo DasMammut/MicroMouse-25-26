@@ -19,7 +19,7 @@
 #define HUGGER_OUT_MIN -60
 #define HUGGER_OUT_MAX  60
 
-#define GYRO_STRAIGHT_Kp 1.5
+#define GYRO_STRAIGHT_Kp 2.0
 #define GYRO_STRAIGHT_Ki 0.0
 #define GYRO_STRAIGHT_Kd 0.0
 

@@ -133,7 +133,9 @@ void Hugger::rightHugger() {
 
 void Hugger::gyroStraight() {
     // Gyro-basierte Geradeauskorrektur: angle sollte ~0 bleiben
-    float correction = gyro.angle * GYRO_STRAIGHT_Kp;
+    // float correction = gyro.angle * GYRO_STRAIGHT_Kp;
+
+    float correction = (gyro.absAngle - gyro.shouldAbsAngle) * GYRO_STRAIGHT_Kp;
     MSV.left  += (int16_t)correction;
     MSV.right -= (int16_t)correction;
 }

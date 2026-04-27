@@ -10,10 +10,13 @@ class Ramp {
 public:
     Ramp(Motors &aMotors);
 
-    void step(const TMotorValues &msv);
+    void set(TMotorValues &aMSV, uint32_t aTicks, int16_t aRPS);
+
+    void step(TMotorValues &aMSV);
 
 private:
     Motors &motors;
+
     int16_t curLeft;
     int16_t curRight;
 

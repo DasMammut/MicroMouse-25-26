@@ -4,10 +4,9 @@
 Pilot::Pilot(IRSensors &aIrSensors, Motors &aMotors, Impeller &aImpeller, Gyro &aGyro)
     : irSensors(aIrSensors), motors(aMotors), impeller(aImpeller), gyro(aGyro), ramp(aMotors),
       curDirection(START_DIRECTION), newDirection(START_DIRECTION), curState(DECIDE), oldState(DECIDE), StateStartTicksL(0), StateStartTicksR(0),
-      leftWall(false), rightWall(false), frontWall(false), wasLeftWall(0), wasRightWall(0), aligned(false),
+      leftWall(false), rightWall(false), frontWall(false), wasLeftWall(false), wasRightWall(false),
       hugger(aIrSensors, aMotors, aGyro),
-      pidGyroCurve(GYRO_STRAIGHT_Kp, GYRO_STRAIGHT_Ki, GYRO_STRAIGHT_Kd),
-      pidDeltaTicks(DELTA_TICKS_Kp, DELTA_TICKS_Ki, DELTA_TICKS_Kd) {
+      pidGyroCurve(GYRO_STRAIGHT_Kp, GYRO_STRAIGHT_Ki, GYRO_STRAIGHT_Kd) {
     MSV.left = 0;
     MSV.right = 0;
     MSV.impeller = 0;
@@ -27,8 +26,6 @@ void Pilot::Init() {
 
     pidGyroCurve.setOutputLimits(-PILOT_TURN_SPEED, PILOT_TURN_SPEED);
     pidGyroCurve.setMode(MODE_AUTO);
-    pidDeltaTicks.setOutputLimits(-PILOT_TURN_SPEED, PILOT_TURN_SPEED);
-    pidDeltaTicks.setMode(MODE_AUTO);
 }
 
 void Pilot::loop() {
@@ -94,15 +91,33 @@ void Pilot::StateMachine() {
 void Pilot::startState(TState aNextState) {
     if(curState != DECIDE) oldState = curState;
     curState = aNextState;
+
     StateStartTicksL = motors.ticksL;
     StateStartTicksR = motors.ticksR;
-    aligned = false;
-    wasLeftWall = irSensors.getLeftCenter();
-    wasRightWall = irSensors.getRightCenter();
-    gyro.reset(); // Winkel auf 0 für nächste Drehung
 
-    // PID-Reset: alte Fehler nicht in den neuen State mitschleppen
+    wasLeftWall = leftWall;
+    wasRightWall = rightWall;
+
+    switch (curState) {
+        case LEFT_CURVE:    
+            gyro.shouldAbsAngle += GYRO_REAL_90;
+            break;
+        case RIGHT_CURVE:
+            gyro.shouldAbsAngle -= GYRO_REAL_90;
+            break;
+        case TURN:
+            gyro.shouldAbsAngle -= GYRO_REAL_180;
+            break;
+        case FORWARD:
+        case DECIDE:
+        case GOAL:
+        default:
+            break;
+    }
+
+    gyro.reset(); 
     hugger.reset();
+    pidGyroCurve.reset();
 }
 
 // SM Einzelne States: Alle Funktionen müssen am Ende den nächsten State setzen, damit die State Machine weiterläuft. Alle Funktionen setzen die MSV-Werte entsprechend, damit im loop() die Motoren und der Impeller die richtigen Werte bekommen.
@@ -154,17 +169,19 @@ void Pilot::SM_forward(uint16_t ticks = TICKS_CELL_CELL) {
     MSV.right = PILOT_FORWARD_SPEED;
     hugger.hug(MSV, leftWall, leftFrontWall, frontWall, rightFrontWall, rightWall);
 
-    // if(!aligned && (int16_t)irSensors.getLeftCenter() - (int16_t)wasLeftWall > ALIGNMENT_SIDE_THRESHOLD) {
-    //     setAvgStartTicks(motors.getAVGTicks() + TICKS_ALIGNMENT_CELL - ticks);
-    //     aligned = true;
-    // }
-    // else if(!aligned && (int16_t)irSensors.getRightCenter() - (int16_t)wasRightWall > ALIGNMENT_SIDE_THRESHOLD) {
-    //     setAvgStartTicks(motors.getAVGTicks() + TICKS_ALIGNMENT_CELL - ticks);
-    //     aligned = true;
-    // }
+    if(!leftWall && wasLeftWall && oldState == FORWARD && irSensors.getCenter() > ALIGNMENT_MIN_FRONT_THRESHOLD) {
+        setAvgStartTicks(motors.getAVGTicks() + TICKS_ALIGNMENT_CELL - ticks);
+    }
+    else if(!rightWall && wasRightWall && oldState == FORWARD && irSensors.getCenter() > ALIGNMENT_MIN_FRONT_THRESHOLD) {
+        setAvgStartTicks(motors.getAVGTicks() + TICKS_ALIGNMENT_CELL - ticks);
+    }
 
-    wasLeftWall = irSensors.getLeftCenter();
-    wasRightWall = irSensors.getRightCenter();
+    wasLeftWall = leftWall;
+    wasRightWall = rightWall;
+
+    if(oldState == FORWARD && fabs(MSV.left - MSV.right) < 5) {
+        gyro.absAngle = gyro.shouldAbsAngle;
+    }
 
     // Eine Zelle gefahren → nächste Entscheidung
     if(motors.getAVGTicks() - avgStartTicks() >= ticks && irSensors.getCenter() > ALIGNMENT_MIN_FRONT_THRESHOLD) {

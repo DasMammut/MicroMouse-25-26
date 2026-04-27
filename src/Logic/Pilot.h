@@ -15,30 +15,31 @@
 
 #define MES_WALL_FRONT_THRESHOLD 120
 #define MES_WALL_FRONTSIDE_THRESHOLD 150
-#define MES_WALL_SIDE_THRESHOLD 110
+#define MES_WALL_SIDE_THRESHOLD 120
 
 #define ALIGNMENT_FRONT_THRESHOLD 60
 #define ALIGNMENT_MIN_FRONT_THRESHOLD 120
-#define ALIGNMENT_SIDE_THRESHOLD 30_x
 
 #define START_DIRECTION NORTH
 
 // Geschwindigkeiten
-#define PILOT_FORWARD_SPEED 70
-#define PILOT_TURN_SPEED 40
+#define PILOT_FORWARD_SPEED 75
+#define PILOT_TURN_SPEED 45
 
 // Gyro Geradeauskorrektur
 #define GYRO_STRAIGHT_Kp 10.0
 
 // Tick für Zellen Orientierung
 #define TICKS_CELL_CELL 80 
-#define TICKS_CURVE_CELL  45
-#define TICKS_ALIGNMENT_CELL 50
+#define TICKS_CURVE_CELL  50
+#define TICKS_ALIGNMENT_CELL 40
 
 // Gyro-basierte Drehwinkel (in Grad)
-#define GYRO_TURN_90  75.0 // 80
-#define GYRO_TURN_180 165.0
+#define GYRO_TURN_90  70.0 // 80
+#define GYRO_TURN_180 155.0
 
+#define GYRO_REAL_90 90
+#define GYRO_REAL_180 180
 
 typedef enum {
     DECIDE,
@@ -80,9 +81,8 @@ private:
     bool rightFrontWall;
     bool rightWall;
 
-    bool aligned;
-    uint16_t wasLeftWall;
-    uint16_t wasRightWall;
+    bool wasLeftWall;
+    bool wasRightWall;
     
 
     void StateMachine(); // State Machine for the different states of the mouse
@@ -107,12 +107,6 @@ private:
     #define GYRO_Ki 0.0
     #define GYRO_Kd 0.0
     AdvancedPID pidGyroCurve; // PID für die Gyro-basierte Kurvenfahrt
-    //void gyroCurve(float angle, float targetAngle); // Funktion für die Gyro-basierte Kurvenfahrt
-    #define DELTA_TICKS_Kp 0.5
-    #define DELTA_TICKS_Ki 0.0
-    #define DELTA_TICKS_Kd 0.0
-    AdvancedPID pidDeltaTicks;
-    //void deltaTicksCurve(); // Funktion für die Delta-Ticks-basierte Kurvenfahrt
 };
 
 #endif

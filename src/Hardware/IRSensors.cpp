@@ -21,50 +21,50 @@ void IRSensors::Init() {
     pinMode(PIN_IR_RM, OUTPUT);
     pinMode(PIN_IR_R, OUTPUT);
 
-    digitalWrite(PIN_IR_L, !LightsOn);
-    digitalWrite(PIN_IR_LM, !LightsOn);
-    digitalWrite(PIN_IR_M, !LightsOn);
-    digitalWrite(PIN_IR_RM, !LightsOn);
-    digitalWrite(PIN_IR_R, !LightsOn);
+    setLEDs(false);
 }
 
 void IRSensors::update() {
-    if(LightsOn){
-        MesON_left_Distance = analogRead(PIN_SEN_L);
-        MesON_leftcenter_Distance = analogRead(PIN_SEN_LM);
-        MesON_center_Distance = analogRead(PIN_SEN_M);
-        MesON_rightcenter_Distance = analogRead(PIN_SEN_RM);
-        MesON_right_Distance = analogRead(PIN_SEN_R);
-        
-    }
-    else{
-        MesOFF_left_Distance = analogRead(PIN_SEN_L);
-        MesOFF_leftcenter_Distance = analogRead(PIN_SEN_LM);
-        MesOFF_center_Distance = analogRead(PIN_SEN_M);
-        MesOFF_rightcenter_Distance = analogRead(PIN_SEN_RM);
-        MesOFF_right_Distance = analogRead(PIN_SEN_R);
-    }
-    left_Distance = MesOFF_left_Distance - MesON_left_Distance;
-    leftcenter_Distance = MesOFF_leftcenter_Distance - MesON_leftcenter_Distance;
-    center_Distance = MesOFF_center_Distance - MesON_center_Distance;
-    rightcenter_Distance = MesOFF_rightcenter_Distance - MesON_rightcenter_Distance;
-    right_Distance = MesOFF_right_Distance - MesON_right_Distance;
+    uint16_t offL  = analogRead(PIN_SEN_L);
+    uint16_t offLM = analogRead(PIN_SEN_LM);
+    uint16_t offM  = analogRead(PIN_SEN_M);
+    uint16_t offRM = analogRead(PIN_SEN_RM);
+    uint16_t offR  = analogRead(PIN_SEN_R);
 
-    LightsOn = !LightsOn;
-    digitalWrite(PIN_IR_L, !LightsOn);
-    digitalWrite(PIN_IR_LM, !LightsOn);
-    digitalWrite(PIN_IR_M, !LightsOn);
-    digitalWrite(PIN_IR_RM, !LightsOn);
-    digitalWrite(PIN_IR_R, !LightsOn);
+    // 2. Messung MIT Licht (Signal + Ambient)
+    setLEDs(true); 
+    delayMicroseconds(400); // Warten, bis die IR-LEDs voll leuchten und Fototransistor reagiert
+    
+    uint16_t onL  = analogRead(PIN_SEN_L);
+    uint16_t onLM = analogRead(PIN_SEN_LM);
+    uint16_t onM  = analogRead(PIN_SEN_M);
+    uint16_t onRM = analogRead(PIN_SEN_RM);
+    uint16_t onR  = analogRead(PIN_SEN_R);
+
+    // 3. LEDs sofort wieder aus (Strom sparen & Wärme reduzieren)
+    setLEDs(false);
+
+    // 4. Differenz berechnen
+    left_Distance = offL - onL;
+    leftcenter_Distance = offLM - onLM;
+    center_Distance = offM - onM;
+    rightcenter_Distance = offRM - onRM;
+    right_Distance = offR - onR;
+}
+
+// Hilfsfunktion um Schreibarbeit zu sparen
+void IRSensors::setLEDs(bool state) {
+    // Falls deine LEDs bei LOW angehen, nutze !state
+    digitalWrite(PIN_IR_L, !state);
+    digitalWrite(PIN_IR_LM, !state);
+    digitalWrite(PIN_IR_M, !state);
+    digitalWrite(PIN_IR_RM, !state);
+    digitalWrite(PIN_IR_R, !state);
 }
 
 void IRSensors::off() {
     LightsOn = false;
-    digitalWrite(PIN_IR_L, !LightsOn);
-    digitalWrite(PIN_IR_LM, !LightsOn);
-    digitalWrite(PIN_IR_M, !LightsOn);
-    digitalWrite(PIN_IR_RM, !LightsOn);
-    digitalWrite(PIN_IR_R, !LightsOn);
+    setLEDs(false);
 }
 
 uint16_t IRSensors::getLeft() {

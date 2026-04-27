@@ -1,5 +1,9 @@
 #include "Gyro.h"
 
+Gyro::Gyro() : biasZ(0), angle(0), absAngle(0), shouldAbsAngle(0), lastMicros(0) {
+
+}
+
 void Gyro::Init() {
     Wire.swap(1);       // Alternative Pins: PC2(SDA)/PC3(SCL) = Pin 16/17
     Wire.begin();       // Als I2C Master starten
@@ -37,6 +41,8 @@ void Gyro::Init() {
     }
     biasZ = sum / 500.0;
     angle = 0;
+    absAngle = 0;
+    shouldAbsAngle = 0;
     lastMicros = micros();
 }
 
@@ -56,5 +62,6 @@ void Gyro::update() {
     
     if(fabs(vZ) > 0.5) { // Rauschunterdrückung
         angle += vZ * dt;
+        absAngle += vZ * dt;
     }
 }

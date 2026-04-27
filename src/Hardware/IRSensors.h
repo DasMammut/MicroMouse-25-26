@@ -50,6 +50,7 @@ private:
     uint16_t MesOFF_rightcenter_Distance;
     uint16_t MesOFF_right_Distance;
 
+    void setLEDs(bool state);
     uint16_t getDistLookUp(uint16_t aDistance);
 
 };
