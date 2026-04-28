@@ -2,9 +2,9 @@
 #include "Map.h"
 
 Pilot::Pilot(IRSensors &aIrSensors, Motors &aMotors, Impeller &aImpeller, Gyro &aGyro)
-    : irSensors(aIrSensors), motors(aMotors), impeller(aImpeller), gyro(aGyro), ramp(aMotors),
+    : irSensors(aIrSensors), motors(aMotors), impeller(aImpeller), gyro(aGyro), ramp(aMotors, aImpeller),
       curDirection(START_DIRECTION), newDirection(START_DIRECTION), curState(DECIDE), oldState(DECIDE), StateStartTicksL(0), StateStartTicksR(0),
-      leftWall(false), rightWall(false), frontWall(false), wasLeftWall(false), wasRightWall(false),
+      leftWall(false), rightWall(false), frontWall(false), wasLeftWall(false), wasRightWall(false), aligned(false),
       hugger(aIrSensors, aMotors, aGyro),
       pidGyroCurve(GYRO_STRAIGHT_Kp, GYRO_STRAIGHT_Ki, GYRO_STRAIGHT_Kd) {
     MSV.left = 0;
@@ -38,7 +38,6 @@ void Pilot::loop() {
     StateMachine();
 
     ramp.step(MSV);
-    impeller.set(MSV.impeller);
     motors.update();
     impeller.update();
 
@@ -97,6 +96,7 @@ void Pilot::startState(TState aNextState) {
 
     wasLeftWall = leftWall;
     wasRightWall = rightWall;
+    aligned = false;
 
     switch (curState) {
         case LEFT_CURVE:    
@@ -169,11 +169,13 @@ void Pilot::SM_forward(uint16_t ticks = TICKS_CELL_CELL) {
     MSV.right = PILOT_FORWARD_SPEED;
     hugger.hug(MSV, leftWall, leftFrontWall, frontWall, rightFrontWall, rightWall);
 
-    if(!leftWall && wasLeftWall && oldState == FORWARD && irSensors.getCenter() > ALIGNMENT_MIN_FRONT_THRESHOLD) {
+    if(!leftWall && wasLeftWall && oldState == FORWARD && irSensors.getCenter() > ALIGNMENT_MIN_FRONT_THRESHOLD && !aligned) {
         setAvgStartTicks(motors.getAVGTicks() + TICKS_ALIGNMENT_CELL - ticks);
+        aligned = true;
     }
-    else if(!rightWall && wasRightWall && oldState == FORWARD && irSensors.getCenter() > ALIGNMENT_MIN_FRONT_THRESHOLD) {
+    else if(!rightWall && wasRightWall && oldState == FORWARD && irSensors.getCenter() > ALIGNMENT_MIN_FRONT_THRESHOLD && !aligned) {
         setAvgStartTicks(motors.getAVGTicks() + TICKS_ALIGNMENT_CELL - ticks);
+        aligned = true;
     }
 
     wasLeftWall = leftWall;

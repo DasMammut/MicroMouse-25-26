@@ -1,26 +1,31 @@
 #include "Ramp.h"
 
-Ramp::Ramp(Motors &aMotors) : motors(aMotors), curLeft(0), curRight(0) {
+Ramp::Ramp(Motors &aMotors, Impeller &aImpeller) : motors(aMotors), impeller(aImpeller), curMSV{0, 0, 0} {
 
 }
 
-void Ramp::step(const TMotorValues &msv) {
-    int16_t tarLeft = msv.left;
-    int16_t tarRight = msv.right;
-
-    if (curLeft < tarLeft) {
-        curLeft = min(curLeft + RAMP_STEP_UP, tarLeft);
+void Ramp::step(const TMotorValues &aMSV) {
+    if (curMSV.left < aMSV.left) {
+        curMSV.left = min(curMSV.left + RAMP_STEP_UP, aMSV.left);
     } 
-    else if (curLeft > tarLeft) {
-        curLeft = max(curLeft - RAMP_STEP_DOWN, tarLeft);
+    else if (curMSV.left > aMSV.left) {
+        curMSV.left = max(curMSV.left - RAMP_STEP_DOWN, aMSV.left);
     }
 
-    if (curRight < tarRight) {
-        curRight = min(curRight + RAMP_STEP_UP, tarRight);
+    if (curMSV.right < aMSV.right) {
+        curMSV.right = min(curMSV.right + RAMP_STEP_UP, aMSV.right);
     } 
-    else if (curRight > tarRight) {
-        curRight = max(curRight - RAMP_STEP_DOWN, tarRight);
+    else if (curMSV.right > aMSV.right) {
+        curMSV.right = max(curMSV.right - RAMP_STEP_DOWN, aMSV.right);
     }
 
-    motors.setRPS(curLeft, curRight);
+    if(curMSV.impeller < aMSV.impeller) {
+        curMSV.impeller = min(curMSV.impeller + IMPELLER_RAMP_STEP_UP, aMSV.impeller);
+    }
+    else if(curMSV.impeller > aMSV.impeller) {
+        curMSV.impeller = max(curMSV.impeller - IMPELLER_RAMP_STEP_DOWN, aMSV.impeller);
+    }
+
+    motors.setRPS(curMSV.left, curMSV.right);
+    impeller.set(curMSV.impeller);
 }

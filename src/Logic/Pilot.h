@@ -32,7 +32,7 @@
 // Tick für Zellen Orientierung
 #define TICKS_CELL_CELL 80 
 #define TICKS_CURVE_CELL  50
-#define TICKS_ALIGNMENT_CELL 40
+#define TICKS_ALIGNMENT_CELL 35
 
 // Gyro-basierte Drehwinkel (in Grad)
 #define GYRO_TURN_90  70.0 // 80
@@ -83,6 +83,7 @@ private:
 
     bool wasLeftWall;
     bool wasRightWall;
+    bool aligned;
     
 
     void StateMachine(); // State Machine for the different states of the mouse

@@ -2,22 +2,23 @@
 
 #include <Arduino.h>
 #include "../Hardware/Motors.h"
+#include "../Hardware/Impeller.h"
 
 #define RAMP_STEP_UP 5
 #define RAMP_STEP_DOWN 5
+#define IMPELLER_RAMP_STEP_UP 5
+#define IMPELLER_RAMP_STEP_DOWN 5
 
 class Ramp {
 public:
-    Ramp(Motors &aMotors);
+    Ramp(Motors &aMotors, Impeller &aImpeller);
 
-    void set(TMotorValues &aMSV, uint32_t aTicks, int16_t aRPS);
-
-    void step(TMotorValues &aMSV);
+    void step(const TMotorValues &aMSV);
 
 private:
     Motors &motors;
+    Impeller &impeller;
 
-    int16_t curLeft;
-    int16_t curRight;
+    TMotorValues curMSV;
 
 };
