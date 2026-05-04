@@ -11,31 +11,33 @@
 #include "Hugger.h"
 #include "Ramp.h"
 
-#define LOOP_PERIOD_MS 5
+#define LOOP_PERIOD_MS 3 // 5
 
 #define MES_WALL_FRONT_THRESHOLD 120
 #define MES_WALL_FRONTSIDE_THRESHOLD 150
 #define MES_WALL_SIDE_THRESHOLD 120
 
-#define ALIGNMENT_FRONT_THRESHOLD 60
-#define ALIGNMENT_MIN_FRONT_THRESHOLD 120
+#define ALIGNMENT_FRONT_THRESHOLD 85
+#define ALIGNMENT_MIN_FRONT_THRESHOLD 140
 
 #define START_DIRECTION NORTH
 
 // Geschwindigkeiten
-#define PILOT_FORWARD_SPEED 75
+#define PILOT_FORWARD_SPEED 90 // 90
+#define PILOT_FORWARD_MIN_SPEED 30
 #define PILOT_TURN_SPEED 45
+#define PILOT_TURN_MIN_SPEED 25
 
 // Gyro Geradeauskorrektur
-#define GYRO_STRAIGHT_Kp 10.0
+#define GYRO_ALIGNMENT_THRESHOLD 5
 
 // Tick für Zellen Orientierung
 #define TICKS_CELL_CELL 80 
-#define TICKS_CURVE_CELL  50
-#define TICKS_ALIGNMENT_CELL 35
+#define TICKS_CURVE_CELL  15 //15
+#define TICKS_ALIGNMENT_CELL 10
 
 // Gyro-basierte Drehwinkel (in Grad)
-#define GYRO_TURN_90  70.0 // 80
+#define GYRO_TURN_90  88.0 
 #define GYRO_TURN_180 155.0
 
 #define GYRO_REAL_90 90
@@ -81,6 +83,7 @@ private:
     bool rightFrontWall;
     bool rightWall;
 
+    int32_t ticksToGo;
     bool wasLeftWall;
     bool wasRightWall;
     bool aligned;
@@ -89,7 +92,7 @@ private:
     void StateMachine(); // State Machine for the different states of the mouse
     void startState(TState aNextState);
     void SM_decide(); // Decision which direction to go, based on the map and the wall information
-    void SM_forward(uint16_t ticks = TICKS_CELL_CELL); // Going forward one cell
+    void SM_forward(); // Going forward one cell
     void SM_leftCurve(); // Turning left while going forward, for better curves 60
     void SM_rightCurve(); // Turning right while going forward, for better curves
     void SM_turn(); // Turning in place, for 180° turns

@@ -40,6 +40,7 @@ public:
 
     void setRPS(int16_t aRPSLeft, int16_t aRPSRight);
 
+    void resetPIDs();
     void resetEncoders();
     int32_t getAVGTicks();  // Durchschnitt beider Encoder
 

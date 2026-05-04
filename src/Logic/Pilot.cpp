@@ -4,7 +4,7 @@
 Pilot::Pilot(IRSensors &aIrSensors, Motors &aMotors, Impeller &aImpeller, Gyro &aGyro)
     : irSensors(aIrSensors), motors(aMotors), impeller(aImpeller), gyro(aGyro), ramp(aMotors, aImpeller),
       curDirection(START_DIRECTION), newDirection(START_DIRECTION), curState(DECIDE), oldState(DECIDE), StateStartTicksL(0), StateStartTicksR(0),
-      leftWall(false), rightWall(false), frontWall(false), wasLeftWall(false), wasRightWall(false), aligned(false),
+      leftWall(false), rightWall(false), frontWall(false), wasLeftWall(false), wasRightWall(false), aligned(false), ticksToGo(0),
       hugger(aIrSensors, aMotors, aGyro),
       pidGyroCurve(GYRO_STRAIGHT_Kp, GYRO_STRAIGHT_Ki, GYRO_STRAIGHT_Kd) {
     MSV.left = 0;
@@ -29,8 +29,8 @@ void Pilot::Init() {
 }
 
 void Pilot::loop() {
-    static uint32_t lastMillis = millis();
-    static uint32_t tempMillis = millis();
+    static uint32_t lastMicros = micros();
+    static uint32_t tempMicros = micros();
 
     irSensors.update();
     gyro.update();
@@ -41,8 +41,8 @@ void Pilot::loop() {
     motors.update();
     impeller.update();
 
-    while ((tempMillis = millis()) - lastMillis < LOOP_PERIOD_MS);
-    lastMillis = tempMillis;
+    while ((tempMicros = micros()) - lastMicros < LOOP_PERIOD_MS * 1000);
+    lastMicros = tempMicros;
 }
 
 // State Machine: Je nach aktuellem State werden unterschiedliche Funktionen aufgerufen, die die MSV-Werte setzen. Alle Funktionen müssen am Ende den nächsten State setzen, damit die State Machine weiterläuft.
@@ -53,19 +53,7 @@ void Pilot::StateMachine() {
             break;
 
         case FORWARD:
-            switch (oldState) {
-                case LEFT_CURVE:
-                case RIGHT_CURVE:
-                case TURN:
-                    SM_forward(TICKS_CURVE_CELL);
-                    break;
-                case DECIDE:
-                case FORWARD:
-                case GOAL:
-                default:
-                    SM_forward(); // Wenn
-                    return;
-            }
+            SM_forward();
             break;
 
         case LEFT_CURVE:
@@ -99,17 +87,30 @@ void Pilot::startState(TState aNextState) {
     aligned = false;
 
     switch (curState) {
+        case DECIDE:
+            break;
+        case FORWARD:
+            if(oldState == FORWARD || oldState == DECIDE) {
+                ticksToGo = TICKS_CELL_CELL;
+                break;
+            }
+            else if(oldState == LEFT_CURVE || oldState == RIGHT_CURVE || oldState == TURN) {
+                ticksToGo = TICKS_CURVE_CELL;
+            }
+            motors.resetPIDs();
+            break;
         case LEFT_CURVE:    
             gyro.shouldAbsAngle += GYRO_REAL_90;
+            motors.resetPIDs();
             break;
         case RIGHT_CURVE:
             gyro.shouldAbsAngle -= GYRO_REAL_90;
+            motors.resetPIDs();
             break;
         case TURN:
             gyro.shouldAbsAngle -= GYRO_REAL_180;
+            motors.resetPIDs();
             break;
-        case FORWARD:
-        case DECIDE:
         case GOAL:
         default:
             break;
@@ -161,38 +162,40 @@ void Pilot::SM_decide() {
     }
 }
 
-void Pilot::SM_forward(uint16_t ticks = TICKS_CELL_CELL) {
+void Pilot::SM_forward() {
     // Wandzentrierung während der Fahrt
     mesWalls();
 
-    MSV.left = PILOT_FORWARD_SPEED;
-    MSV.right = PILOT_FORWARD_SPEED;
+    int16_t dynamicSpeed = ::map(irSensors.getCenter(), ALIGNMENT_FRONT_THRESHOLD, ALIGNMENT_MIN_FRONT_THRESHOLD, PILOT_FORWARD_MIN_SPEED, PILOT_FORWARD_SPEED);
+    dynamicSpeed = constrain(dynamicSpeed, PILOT_FORWARD_MIN_SPEED, PILOT_FORWARD_SPEED);
+
+    MSV.left = dynamicSpeed;
+    MSV.right = dynamicSpeed;
     hugger.hug(MSV, leftWall, leftFrontWall, frontWall, rightFrontWall, rightWall);
 
     if(!leftWall && wasLeftWall && oldState == FORWARD && irSensors.getCenter() > ALIGNMENT_MIN_FRONT_THRESHOLD && !aligned) {
-        setAvgStartTicks(motors.getAVGTicks() + TICKS_ALIGNMENT_CELL - ticks);
+        ticksToGo = motors.getAVGTicks() - avgStartTicks() + TICKS_ALIGNMENT_CELL;
         aligned = true;
     }
     else if(!rightWall && wasRightWall && oldState == FORWARD && irSensors.getCenter() > ALIGNMENT_MIN_FRONT_THRESHOLD && !aligned) {
-        setAvgStartTicks(motors.getAVGTicks() + TICKS_ALIGNMENT_CELL - ticks);
+        ticksToGo = motors.getAVGTicks() - avgStartTicks() + TICKS_ALIGNMENT_CELL;
         aligned = true;
     }
 
     wasLeftWall = leftWall;
     wasRightWall = rightWall;
 
-    if(oldState == FORWARD && fabs(MSV.left - MSV.right) < 5) {
+    if(oldState == FORWARD && fabs(MSV.left - MSV.right) < GYRO_ALIGNMENT_THRESHOLD) {
         gyro.absAngle = gyro.shouldAbsAngle;
     }
 
-    // Eine Zelle gefahren → nächste Entscheidung
-    if(motors.getAVGTicks() - avgStartTicks() >= ticks && irSensors.getCenter() > ALIGNMENT_MIN_FRONT_THRESHOLD) {
+    if(motors.getAVGTicks() - avgStartTicks() >= ticksToGo && irSensors.getCenter() > ALIGNMENT_MIN_FRONT_THRESHOLD) {
         map.moveCell(curDirection);
         startState(DECIDE);
         return;
     }
 
-    if(irSensors.getCenter() < ALIGNMENT_FRONT_THRESHOLD) {
+    if(irSensors.getCenter() < ALIGNMENT_FRONT_THRESHOLD && irSensors.getCenter() <= ALIGNMENT_MIN_FRONT_THRESHOLD) {
         map.moveCell(curDirection);
         startState(DECIDE);
         return;
@@ -201,9 +204,10 @@ void Pilot::SM_forward(uint16_t ticks = TICKS_CELL_CELL) {
 
 void Pilot::SM_leftCurve() {
     float angle = fabs(gyro.angle);
-    float error = gyro.angle - GYRO_TURN_90;
+    float error = angle - GYRO_TURN_90;
     float correction = pidGyroCurve.run(error, 0.0);
-    MSV.left  = -correction / 5;
+    correction = constrain(correction, PILOT_TURN_MIN_SPEED, PILOT_TURN_SPEED);
+    MSV.left  = 0;
     MSV.right = correction;
 
     if(angle >= GYRO_TURN_90) {
@@ -214,10 +218,11 @@ void Pilot::SM_leftCurve() {
 
 void Pilot::SM_rightCurve() {
     float angle = fabs(gyro.angle);
-    float error = gyro.angle - GYRO_TURN_90;
+    float error = angle - GYRO_TURN_90;
     float correction = pidGyroCurve.run(error, 0.0);
+    correction = constrain(correction, PILOT_TURN_MIN_SPEED, PILOT_TURN_SPEED);
     MSV.left  = correction;
-    MSV.right = -correction  / 5;
+    MSV.right = 0;
 
     if(angle >= GYRO_TURN_90) {
         curDirection = newDirection;
@@ -226,7 +231,6 @@ void Pilot::SM_rightCurve() {
 }
 
 void Pilot::SM_turn() {
-    // Sinus-Profil für 180°: Peak bei 90°, Min = TURN_SPEED/3
     float angle = fabs(gyro.angle);
 
     MSV.left  =  PILOT_TURN_SPEED;
@@ -239,6 +243,7 @@ void Pilot::SM_turn() {
 }
 
 void Pilot::SM_goal() {
+    mesWalls();
     MSV.left = 0;
     MSV.right = 0;
     MSV.impeller = 0;
@@ -246,6 +251,7 @@ void Pilot::SM_goal() {
     if(motors.getAVGTicks() - avgStartTicks() <= TICKS_CELL_CELL) {
         MSV.left = PILOT_FORWARD_SPEED / 2;
         MSV.right = PILOT_FORWARD_SPEED / 2;
+        hugger.hug(MSV, leftWall, leftFrontWall, frontWall, rightFrontWall, rightWall);
     }
 }
 

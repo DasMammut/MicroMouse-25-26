@@ -36,6 +36,11 @@ void Motors::setRPS(int16_t aRPSsetLeft, int16_t aRPSsetRight) {
     RPSsetRight = aRPSsetRight;
 }
 
+void Motors::resetPIDs() {
+    lPID.reset();
+    rPID.reset();
+}
+
 void Motors::resetEncoders() {
     cli();
     encoderLPeriod = TCB_MAX * ENCODER_COUNTS_PER_REV;
