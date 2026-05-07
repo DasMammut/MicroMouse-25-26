@@ -15,31 +15,29 @@
 
 #define MES_WALL_FRONT_THRESHOLD 120
 #define MES_WALL_FRONTSIDE_THRESHOLD 150
-#define MES_WALL_SIDE_THRESHOLD 120
+#define MES_WALL_SIDE_THRESHOLD 140
 
-#define ALIGNMENT_FRONT_THRESHOLD 85
-#define ALIGNMENT_MIN_FRONT_THRESHOLD 140
-
-#define START_DIRECTION NORTH
+#define ALIGNMENT_FRONT_THRESHOLD 100 //95
+#define ALIGNMENT_FRONT_TURN_THRESHOLD 60
+#define ALIGNMENT_MIN_FRONT_THRESHOLD 160
 
 // Geschwindigkeiten
-#define PILOT_FORWARD_SPEED 90 // 90
-#define PILOT_FORWARD_MIN_SPEED 30
-#define PILOT_TURN_SPEED 45
-#define PILOT_TURN_MIN_SPEED 25
+#define PILOT_FORWARD_SPEED 80 //90
+#define PILOT_FORWARD_MIN_SPEED 35 
+#define PILOT_CURVE_SPEED 45 // 45 
+#define PILOT_TURN_SPEED 35
 
 // Gyro Geradeauskorrektur
-#define GYRO_ALIGNMENT_THRESHOLD 5
+#define GYRO_ALIGNMENT_THRESHOLD 4
 
 // Tick für Zellen Orientierung
 #define TICKS_CELL_CELL 80 
-#define TICKS_CURVE_CELL  15 //15
-#define TICKS_ALIGNMENT_CELL 10
+#define TICKS_CURVE_CELL 15 //15
+#define TICKS_ALIGNMENT_CELL 10 //10
 
 // Gyro-basierte Drehwinkel (in Grad)
-#define GYRO_TURN_90  88.0 
-#define GYRO_TURN_180 155.0
-
+#define GYRO_TURN_90  89.0 
+#define GYRO_TURN_180 166.0
 #define GYRO_REAL_90 90
 #define GYRO_REAL_180 180
 
@@ -100,17 +98,7 @@ private:
 
 
     void mesWalls(); // Getting the wall information from the IR Sensors and saving it in the class variables
-    TDirection rotateLeft(TDirection aDirection);
-    TDirection turnAround(TDirection aDirection);
-    TDirection rotateRight(TDirection aDirection);
     int32_t avgStartTicks(); // Hilfsfunktion, um den Durchschnitt der Startticks für die State Machine zu bekommen
-    void setAvgStartTicks(int32_t ticks); // Hilfsfunktion, um die Startticks für die State Machine zu setzen
-    
-
-    #define GYRO_Kp 1.5
-    #define GYRO_Ki 0.0
-    #define GYRO_Kd 0.0
-    AdvancedPID pidGyroCurve; // PID für die Gyro-basierte Kurvenfahrt
 };
 
 #endif

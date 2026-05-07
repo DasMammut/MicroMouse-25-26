@@ -44,14 +44,6 @@ void setup() {
 void loop() {
     pilot.loop();
 
-    // Temp. Test: Stop-Button und Akku-Überwachung
-    if(digitalRead(PIN_TEMP_START) == LOW) {
-        motors.stop();
-        impeller.stop();
-        irSensors.off();
-        startCondition();
-    }
-
     if(analogRead(PIN_AKKU) < MIN_AKKU_VAL) {
         // Akku fast leer, sofort anhalten
         motors.stop();
@@ -70,30 +62,8 @@ void loop() {
 }
 
 void startCondition() {
-    irSensors.update();
-    delay(10);
-    irSensors.update(); 
-
-    while(irSensors.getCenter() > START_DISTANCE) {
-        irSensors.update();
-        delay(20); 
-    }
-
-    bool readyToGo = false;
-    while(!readyToGo) {
-        irSensors.update();
-        int akku = analogRead(PIN_AKKU);
-
-        if(irSensors.getCenter() > START_DISTANCE && akku > MIN_AKKU_START_VAL) {
-            readyToGo = true;
-        }
-        
-        delay(20);
-    }
-
-    #ifdef DEBUG
-    debugOutput();
-    #endif
+    while(digitalRead(PIN_TEMP_START) != LOW || analogRead(PIN_AKKU) < MIN_AKKU_START_VAL);
+    delay(200);
 }
 
 

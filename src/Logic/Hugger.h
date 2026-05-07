@@ -13,13 +13,13 @@
 #define HUGGER_FRONT_OFFSET 0
 #define HUGGER_FRONTRIGHT_OFFSET 80 // rausmessen bei nutzung
 #define HUGGER_RIGHT_OFFSET 75 
-#define HUGGER_Kp 0.4
+#define HUGGER_Kp 0.5 // 0.4
 #define HUGGER_Ki 0.0
 #define HUGGER_Kd 0.0
 #define HUGGER_OUT_MIN -60
 #define HUGGER_OUT_MAX  60
 
-#define GYRO_STRAIGHT_Kp 2.0
+#define GYRO_STRAIGHT_Kp 3.5 // 3.5
 #define GYRO_STRAIGHT_Ki 0.0
 #define GYRO_STRAIGHT_Kd 0.0
 
@@ -30,6 +30,7 @@ public:
     void Init();
 
     void hug(TMotorValues &aMSV, bool leftWall, bool leftFrontWall, bool frontWall, bool rightFrontWall, bool rightWall);
+    int16_t getHuggerError();
 
     void reset();
 
@@ -38,6 +39,8 @@ private:
     IRSensors &irSensors;
     Motors &motors;
     Gyro &gyro;
+
+    int16_t lastHuggerError;
 
     AdvancedPID pidLeftHugger;
     AdvancedPID pidLeftFrontHugger;

@@ -17,9 +17,9 @@ void Map::Init() {
     MouseFacing = NORTH;
 
     targets[0] = {TARGET_0};
-    targets[1] = {TARGET_1};
-    targets[2] = {TARGET_2};
-    targets[3] = {TARGET_3};
+    // targets[1] = {TARGET_1};
+    // targets[2] = {TARGET_2};
+    // targets[3] = {TARGET_3};
 
     for(uint8_t x = 0; x < MAP_SIZE; x++) {
         for(uint8_t y = 0; y < MAP_SIZE; y++) {
@@ -42,12 +42,24 @@ void Map::Init() {
     for(int i = 0; i < TARGET_COUNT; i++) {
         map[targets[i].x][targets[i].y].FFV = TARGET_VALUE;
     }
+
+    for(uint8_t x = 0; x < MAP_SIZE; x++) {
+        for(uint8_t y = 0; y < MAP_SIZE; y++) {
+            visitedCells[x][y] = false;
+        }
+    }
+}
+
+
+void Map::softInit() {
+    MousePosition = {0, 0};
+    MouseFacing = NORTH;
 }
 
 void Map::setWalls(TDirection aDirection, bool aLeft, bool aLeftFront, bool aCenter, bool aRightFront, bool aRight) {
     MouseFacing = aDirection;
     TCell &currentCell = map[MousePosition.x][MousePosition.y];
-
+    visitedCells[MousePosition.x][MousePosition.y] = true;
 
     if (aLeft) {
         switch (MouseFacing) {
@@ -140,6 +152,7 @@ void Map::setWalls(TDirection aDirection, bool aLeft, bool aLeftFront, bool aCen
                 *currentCell.North = WALL;
                 break;
         }
+
     }
 }
 
@@ -238,7 +251,7 @@ void Map::FloodFill(){
 
     bool changed;
     do {
-        changed = false; // MUSS hier auf false gesetzt werden!
+        changed = false; 
         for(uint8_t x = 0; x < MAP_SIZE; x++) {
             for(uint8_t y = 0; y < MAP_SIZE; y++) {
                 
@@ -276,73 +289,15 @@ void Map::FloodFill(){
     } while (changed);
 }
 
-// ASCII-Map auf Serial ausgeben
-// Zeigt Wände, Maus-Position (M), Ziel (*) und FloodFill-Werte
-void Map::printMap(Stream &serial) {
-    serial.println(F("===== MAP ====="));
-    // Von oben (x=MAP_SIZE-1) nach unten (x=0) zeichnen
-    for(int8_t x = MAP_SIZE - 1; x >= 0; x--) {
-        // Obere Wand-Zeile (horizontale Wände = North-Wand der Zelle)
-        serial.print('+');
-        for(uint8_t y = 0; y < MAP_SIZE; y++) {
-            if(*map[x][y].North == WALL)
-                serial.print("---+");
-            else
-                serial.print("   +");
-        }
-        serial.println();
 
-        // Zellen-Zeile (vertikale Wände + Inhalt)
-        for(uint8_t y = 0; y < MAP_SIZE; y++) {
-            // Linke Wand
-            if(*map[x][y].West == WALL)
-                serial.print('|');
-            else
-                serial.print(' ');
-
-            // Zellinhalt: Maus, Ziel oder FFV
-            if(MousePosition.x == x && MousePosition.y == y) {
-                // Maus mit Richtungspfeil
-                const char arrows[] = {'^', '>', 'v', '<'}; // N E S W
-                serial.print(' ');
-                serial.print(arrows[MouseFacing]);
-                serial.print(' ');
-            } else {
-                bool isTarget = false;
-                for(uint8_t i = 0; i < TARGET_COUNT; i++) {
-                    if(targets[i].x == x && targets[i].y == y) {
-                        isTarget = true;
-                        break;
-                    }
-                }
-                if(isTarget) {
-                    serial.print(" * ");
-                } else if(map[x][y].FFV < 100) {
-                    if(map[x][y].FFV < 10) serial.print(' ');
-                    serial.print(map[x][y].FFV);
-                    serial.print(' ');
-                } else {
-                    serial.print("   ");
-                }
-            }
-        }
-        // Rechte Außenwand
-        if(*map[x][MAP_SIZE-1].East == WALL)
-            serial.print('|');
-        else
-            serial.print(' ');
-        serial.println();
-    }
-    // Unterste Wand-Zeile (South-Wand von x=0)
-    serial.print('+');
-    for(uint8_t y = 0; y < MAP_SIZE; y++) {
-        if(*map[0][y].South == WALL)
-            serial.print("---+");
-        else
-            serial.print("   +");
-    }
-    serial.println();
-    serial.println(F("==============="));
+TDirection rotateLeft(TDirection aDirection) {
+    return static_cast<TDirection>((aDirection + 3) % 4);
 }
 
+TDirection turnAround(TDirection aDirection) {
+    return static_cast<TDirection>((aDirection + 2) % 4);
+}
 
+TDirection rotateRight(TDirection aDirection) {
+    return static_cast<TDirection>((aDirection + 1) % 4);
+}

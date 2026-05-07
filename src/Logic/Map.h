@@ -3,13 +3,15 @@
 
 #include <Arduino.h>
 
-#define MAP_SIZE 8
+#define MAP_SIZE 11 //8
+#define START_DIRECTION NORTH
 
-#define TARGET_COUNT 4
-#define TARGET_0 MAP_SIZE/2 - 1, MAP_SIZE/2 - 1
-#define TARGET_1 MAP_SIZE/2 - 1, MAP_SIZE/2
-#define TARGET_2 MAP_SIZE/2, MAP_SIZE/2 - 1
-#define TARGET_3 MAP_SIZE/2, MAP_SIZE/2
+#define TARGET_COUNT 1 // 4
+#define TARGET_0 5, 5
+// #define TARGET_0 MAP_SIZE/2 - 1, MAP_SIZE/2 - 1
+// #define TARGET_1 MAP_SIZE/2 - 1, MAP_SIZE/2
+// #define TARGET_2 MAP_SIZE/2, MAP_SIZE/2 - 1
+// #define TARGET_3 MAP_SIZE/2, MAP_SIZE/2
 
 #define TARGET_VALUE 0
 
@@ -46,6 +48,8 @@ public:
 
     void Init();
 
+    void softInit();
+
     void setWalls(TDirection aDirection, bool aLeft, bool aLeftFront, bool aCenter, bool aRightFront, bool aRight); // Setting the walls in the map based on the direction the mouse is facing and the sensor values
     void moveCell(TDirection aDirection); // Updating the position of the mouse based on the direction it is moving
     void updateMaze();
@@ -56,7 +60,6 @@ public:
 
     uint8_t getMouseX() { return MousePosition.x; }
     uint8_t getMouseY() { return MousePosition.y; }
-    void printMap(Stream &serial); // Map als ASCII-Art auf Serial ausgeben
 
 private:
     TPosition MousePosition;
@@ -66,9 +69,14 @@ private:
     TWall H_walls[MAP_SIZE + 1][MAP_SIZE];
     TWall V_walls[MAP_SIZE][MAP_SIZE + 1];
 
+    bool visitedCells[MAP_SIZE][MAP_SIZE];
 
     void FloodFill();
 };
+
+TDirection rotateLeft(TDirection aDirection);
+TDirection turnAround(TDirection aDirection);
+TDirection rotateRight(TDirection aDirection);
 
 
 #endif
